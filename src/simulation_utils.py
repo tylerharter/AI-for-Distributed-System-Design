@@ -1,10 +1,11 @@
-from functools import wraps
+from functools import partial, wraps
+from multiprocessing import Pool
 import os
 from time import time
 from typing import List
 
 # eudoxia imports
-from eudoxia.simulator import run_simulator
+from eudoxia.simulator import run_simulator, SimulatorStats
 from eudoxia.workload import WorkloadGenerator
 from eudoxia.workload.csv_io import (
     CSVWorkloadWriter,
@@ -102,38 +103,49 @@ def generate_traces(k: int, base_params: dict):
 
 
 @timing
-def get_stats_for_policy(
+def get_raw_stats_for_policy(
     # basic simulation params
     base_params: dict,
     # files with traces to use as sim input
     trace_files: list,
-    # policy to tests, list of strings, string
-    # should be a policy key defined earlier
+    # policy to test, should be a policy key defined earlier
     policy_algorithm: str,
-    # metric to return: "latency" or "throughput"
-    metric: str = "throughput",
-) -> List[float]:
-    """Get raw stats for a given policy, without combining them into a reward
+) -> List[SimulatorStats]:
+    """Get full SimulatorStats for a given policy.
 
     Args:
         base_params: Basic simulation parameters
         trace_files: List of trace files to use as simulation input
         policy_algorithm: Policy key to test
+
+    Returns:
+        List of SimulatorStats objects (one per trace file)
+    """
+    params = base_params.copy()
+    params["scheduler_algo"] = policy_algorithm
+    run_sim = partial(run_simulation_with_trace, params)
+    with Pool() as pool:
+        stats = pool.map(run_sim, trace_files)
+    return stats
+
+
+def get_stats_for_policy(
+    # full SimulatorStats from get_raw_stats_for_policy
+    raw_stats: List[SimulatorStats],
+    # metric to return: "latency" or "throughput"
+    metric: str = "throughput",
+) -> List[float]:
+    """Extract metric values from SimulatorStats.
+
+    Args:
+        raw_stats: List of SimulatorStats from get_raw_stats_for_policy
         metric: Metric to return - either "latency" or "throughput"
 
     Returns:
-        List of metric values (one per trace file)
+        List of metric values (one per SimulatorStats)
     """
-    latencies = []
-    throughput = []
-    params = base_params.copy()
-    params["scheduler_algo"] = policy_algorithm
-    for t in trace_files:
-        output = run_simulation_with_trace(params, t)
-        latencies.append(output.p99_latency)
-        throughput.append(output.throughput)
-
     if metric == "latency":
-        return latencies
-    else:  # default to throughput
-        return throughput
+        return [s.adjusted_latency() for s in raw_stats]
+    else:
+        assert metric == "throughput", f"Unknown metric: {metric}"
+        return [s.throughput for s in raw_stats]

@@ -8,26 +8,34 @@ import time
 import litellm
 from litellm import completion
 from prompts import POLICY_GENERATION_SYSTEM_PROMPT
+from eudoxia.__main__ import SCHEDULER_TEMPLATE
 
 
 # Global cost tracking
 _response_costs = []
 
 
-def build_system_context():
-    """Build the system context from markdown files"""
+def build_system_context(files=[], sections={}):
+    """Build the system context from markdown files and additional sections.
+
+    Args:
+        files: List of filenames in src/markdown/ to read and include
+        sections: Dict mapping section names to content strings
+
+    Returns:
+        Combined context string
+    """
     context_parts = []
     markdown_dir = Path("src/markdown")
 
-    # Read the markdown files in a specific order for coherence
-    file_order = ["eudoxia_bauplan.md", "policy_examples.md"]
-
-    for filename in file_order:
+    for filename in files:
         filepath = markdown_dir / filename
-        if filepath.exists():
-            with open(filepath, "r") as f:
-                content = f.read()
-                context_parts.append(f"# {filename}\n{content}")
+        with open(filepath, "r") as f:
+            content = f.read()
+            context_parts.append(f"# {filename}\n{content}")
+
+    for section_name, content in sections.items():
+        context_parts.append(f"# {section_name}\n{content}")
 
     return "\n\n".join(context_parts)
 
@@ -182,7 +190,11 @@ def generate_and_save_policy(
     # Build context
     if verbose:
         print("Building system context from markdown files...")
-    system_context = build_system_context()
+    starter_template = SCHEDULER_TEMPLATE.format(scheduler_name="example")
+    system_context = build_system_context(
+        files=["eudoxia_bauplan.md"],
+        sections={"Starter Scheduler Template": f"```python\n{starter_template}\n```"},
+    )
 
     # Generate policy
     if verbose:

@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.13"
 
 [[package]]
@@ -15,7 +15,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "eudoxia", git = "https://github.com/BauplanLabs/eudoxia?rev=main" },
+    { name = "eudoxia", git = "https://github.com/BauplanLabs/eudoxia?rev=d1b2f188979f91bd5a3f8fdaf6cdcc1bf06936b7" },
     { name = "litellm", specifier = ">=1.77.5" },
     { name = "python-dotenv", specifier = ">=1.1.1" },
     { name = "wonderwords", specifier = ">=2.2.0" },
@@ -288,7 +288,7 @@ wheels = [
 [[package]]
 name = "eudoxia"
 version = "0.0"
-source = { git = "https://github.com/BauplanLabs/eudoxia?rev=main#1acecd4c9500ba32fd51f71c3406f6c7dc1d281f" }
+source = { git = "https://github.com/BauplanLabs/eudoxia?rev=d1b2f188979f91bd5a3f8fdaf6cdcc1bf06936b7#d1b2f188979f91bd5a3f8fdaf6cdcc1bf06936b7" }
 dependencies = [
     { name = "matplotlib" },
     { name = "numpy" },
