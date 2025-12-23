@@ -1,5 +1,4 @@
-from functools import partial, wraps
-from multiprocessing import Pool
+from functools import wraps
 import os
 from time import time
 from typing import List
@@ -123,9 +122,8 @@ def get_raw_stats_for_policy(
     """
     params = base_params.copy()
     params["scheduler_algo"] = policy_algorithm
-    run_sim = partial(run_simulation_with_trace, params)
-    with Pool() as pool:
-        stats = pool.map(run_sim, trace_files)
+    # Run sequentially in this process to preserve scheduler registrations from exec()
+    stats = [run_simulation_with_trace(params, trace_file) for trace_file in trace_files]
     return stats
 
 

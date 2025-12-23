@@ -152,12 +152,14 @@ def generate_policy_with_llm(
         # gpt-5 does not use temperature
         temperature = 1
 
+    print(f"sending {len(messages)} messages to {model}")
     response = completion_with_retry(
         model=model,
         messages=messages,
         temperature=temperature,
         reasoning_effort=reasoning_effort,
     )
+    print(f"got response from {model}")
 
     return response.choices[0].message.content
 
@@ -213,7 +215,8 @@ def generate_and_save_policy(
     filepath = save_policy_to_file(generated_code, user_request, policy_key)
 
     # Extract the policy key from the generated code to verify it matches
-    key_match = re.search(r'@register_scheduler\("([^"]+)"\)', generated_code)
+    # Handle both @register_scheduler("key") and @register_scheduler(key="key") syntax
+    key_match = re.search(r'@register_scheduler\((?:key=)?"([^"]+)"\)', generated_code)
     extracted_key = key_match.group(1) if key_match else "generated_policy"
     assert extracted_key == policy_key, (
         f"Extracted key '{extracted_key}' does not match expected key '{policy_key}'"
